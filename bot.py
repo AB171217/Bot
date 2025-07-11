@@ -1,10 +1,11 @@
 import telebot
 import requests
+from flask import Flask, request
 
 BOT_TOKEN = "8048451154:AAGqceEivEO6hlKWCCd4zMLgEfzcb3NrHvU"
 bot = telebot.TeleBot(BOT_TOKEN)
+app = Flask(__name__)
 
-# קישורים לפעולות
 CHECKIN_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in"
 CHECKOUT_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"
 WHO_IS_INSIDE_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=who"
@@ -53,4 +54,21 @@ def handle_callback(call):
         except Exception as e:
             bot.send_message(call.message.chat.id, f"שגיאה: {str(e)}")
 
-bot.infinity_polling()
+# Flask route
+@app.route(f"/{BOT_TOKEN}", methods=['POST'])
+def receive_update():
+    update = telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
+    bot.process_new_updates([update])
+    return "ok", 200
+
+@app.route("/", methods=["GET"])
+def index():
+    return "Bot is running (Webhook mode)", 200
+
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 10000))
+    bot.remove_webhook()
+    bot.set_webhook(url=f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}/{BOT_TOKEN}")
+    app.run(host="0.0.0.0", port=port)
+
