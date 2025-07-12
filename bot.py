@@ -19,9 +19,9 @@ FLOOR_LINKS = {
 }
 
 # קישור לגיליון
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1SEdIG0scZEEtKOfvHuKrO7A3Uq2-1B7eKUtI7v3cKZs/edit?usp=sharing"
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1nuKPGkxCeJzAnguAo-xA03zY7rdHr5gynlQQwfcw4Ik/edit?usp=drivesdk"
 
-# תפריט אינליין
+# תפריט אינליין (בהודעה רגילה)
 def send_main_menu(chat_id):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(
@@ -33,11 +33,11 @@ def send_main_menu(chat_id):
         markup.add(telebot.types.InlineKeyboardButton(f"📍 קומה {floor_name}", url=url))
     bot.send_message(chat_id, "בחר פעולה:", reply_markup=markup)
 
-# תפריט נעוץ למטה
+# תפריט נעוץ בתחתית הצ'אט
 def send_reply_keyboard(chat_id):
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
     markup.row("📊 טבלת מעקב")
-    bot.send_message(chat_id, "בחר פעולה נוספת או שלח פקודה", reply_markup=markup)
+    bot.send_message(chat_id, "‎", reply_markup=markup)  # שולח רק תפריט, בלי טקסט
 
 # התחלה
 @bot.message_handler(commands=['start'])
@@ -72,7 +72,7 @@ def handle_who_is_inside(call):
     send_main_menu(call.message.chat.id)
     send_reply_keyboard(call.message.chat.id)
 
-# לחיצה על כפתור "📊 טבלת מעקב"
+# לחיצה על כפתור טבלת מעקב
 @bot.message_handler(func=lambda msg: msg.text == "📊 טבלת מעקב")
 def handle_sheet_button(message):
     bot.send_message(message.chat.id, GOOGLE_SHEET_URL)
