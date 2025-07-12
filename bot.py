@@ -19,24 +19,19 @@ FLOOR_LINKS = {
 }
 
 # תפריט התחלה
-from telebot import types
-
 def send_main_menu(chat_id):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    row1 = [
-        types.KeyboardButton("כניסה למנהרה"),
-        types.KeyboardButton("יציאה מהמנהרה"),
-        types.KeyboardButton("מי נמצא במנהרה?")
-    ]
-    row2 = [
-        types.KeyboardButton("קומת OP.F"),
-        types.KeyboardButton("קומת GEN.F"),
-        types.KeyboardButton("קומת TU.F"),
-        types.KeyboardButton("קומת MIV.F")
-    ]
-    markup.add(*row1)
-    markup.add(*row2)
-    bot.send_message(chat_id, "בחר פעולה מהתפריט:", reply_markup=markup)
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(
+        telebot.types.InlineKeyboardButton("🔓 כניסה למנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in"),
+        telebot.types.InlineKeyboardButton("🔒 יציאה מהמנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"),
+    )
+    markup.add(telebot.types.InlineKeyboardButton("👀 מי נמצא במנהרה?", callback_data="who_is_inside"))
+
+    # הוספת קומות
+    for floor_name, url in FLOOR_LINKS.items():
+        markup.add(telebot.types.InlineKeyboardButton(f"📍 קומה {floor_name}", url=url))
+
+    bot.send_message(chat_id, "בחר פעולה:", reply_markup=markup)
 
 # התחלה
 @bot.message_handler(commands=['start'])
