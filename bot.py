@@ -10,6 +10,9 @@ bot = telebot.TeleBot(TOKEN)
 # URL שמחזיר את רשימת העובדים במנהרה
 WHO_IS_INSIDE_URL = "https://script.google.com/macros/s/AKfycbwQ2QwoI8k6cpR8zuJlZdho9fyBo-XMjkkfmmFKfy70s5FS-Q31U9cjPicc3jVgqwI-/exec?action=who"
 
+# קישור ל־Google Sheet
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1nuKPGkxCeJzAnguAo-xA03zY7rdHr5gynlQQwfcw4Ik/edit?usp=drivesdk"
+
 # קישורים לכל קומה
 FLOOR_LINKS = {
     "OP.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=OP.F",
@@ -18,7 +21,7 @@ FLOOR_LINKS = {
     "MIV.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=MIV.F"
 }
 
-# תפריט התחלה
+# תפריט התחלה (inline)
 def send_main_menu(chat_id):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(
@@ -33,10 +36,23 @@ def send_main_menu(chat_id):
 
     bot.send_message(chat_id, "בחר פעולה:", reply_markup=markup)
 
+# תפריט קבוע למטה עם קישור ל־Google Sheet
+def send_persistent_keyboard(chat_id):
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
+    button = telebot.types.KeyboardButton("📊 טבלת מעקב")
+    markup.add(button)
+    bot.send_message(chat_id, "לגישה ישירה לגיליון:", reply_markup=markup)
+
 # התחלה
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     send_main_menu(message.chat.id)
+    send_persistent_keyboard(message.chat.id)
+
+# תגובה לתפריט הקבוע
+@bot.message_handler(func=lambda msg: msg.text == "📊 טבלת מעקב")
+def handle_sheet_button(message):
+    bot.send_message(message.chat.id, f"הנה הקישור לגיליון:\n{GOOGLE_SHEET_URL}")
 
 # לחיצה על כפתור "מי נמצא במנהרה?"
 @bot.callback_query_handler(func=lambda call: call.data == "who_is_inside")
@@ -47,23 +63,23 @@ def handle_who_is_inside(call):
 
         if not data or "אין רישום" in data:
             bot.send_message(call.message.chat.id, "אין רישום של עובדים שנמצאים במנהרה.")
-            return
-
-        lines = data.splitlines()
-        output = ""
-        for line in lines:
-            parts = line.split("|")
-            if len(parts) >= 3:
-                name = parts[0].strip()
-                time = parts[1].split(" GMT")[0].strip()  # מנקה את אזור הזמן
-                duration = parts[2].strip()
-                output += f"{name} - {time} ({duration})\n"
-
-        bot.send_message(call.message.chat.id, output or "לא נמצאו עובדים.")
-        send_main_menu(call.message.chat.id)
-
+        else:
+            lines = data.splitlines()
+            output = ""
+            for line in lines:
+                parts = line.split("|")
+                if len(parts) >= 3:
+                    name = parts[0].strip()
+                    time = parts[1].split(" GMT")[0].strip()  # מנקה את אזור הזמן
+                    duration = parts[2].strip()
+                    output += f"{name} - {time} ({duration})\n"
+            bot.send_message(call.message.chat.id, output or "לא נמצאו עובדים.")
     except Exception as e:
         bot.send_message(call.message.chat.id, f"שגיאה: {e}")
+
+    # הצגת התפריטים מחדש
+    send_main_menu(call.message.chat.id)
+    send_persistent_keyboard(call.message.chat.id)
 
 # Flask setup
 app = Flask(__name__)
