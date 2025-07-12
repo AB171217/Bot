@@ -22,8 +22,8 @@ FLOOR_LINKS = {
 def send_main_menu(chat_id):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(
-        telebot.types.InlineKeyboardButton("🔓 כניסה למנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in"),
-        telebot.types.InlineKeyboardButton("🔒 יציאה מהמנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"),
+        telebot.types.InlineKeyboardButton("☑️ כניסה למנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in"),
+        telebot.types.InlineKeyboardButton("✅ יציאה מהמנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"),
     )
     markup.add(telebot.types.InlineKeyboardButton("👀 מי נמצא במנהרה?", callback_data="who_is_inside"))
 
