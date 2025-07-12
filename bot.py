@@ -60,6 +60,7 @@ def handle_who_is_inside(call):
                 output += f"{name} - {time} ({duration})\n"
 
         bot.send_message(call.message.chat.id, output or "לא נמצאו עובדים.")
+        send_main_menu(call.message.chat.id)
 
     except Exception as e:
         bot.send_message(call.message.chat.id, f"שגיאה: {e}")
