@@ -42,7 +42,7 @@ def send_menu(message):
 def handle_callback(call):
     if call.data == "who_inside":
         try:
-            response = requests.get(WHO_IS_INSIDE_URL)
+            response = requests.get(WHO_IS_INSIDE_URL, allow_redirects=False, timeout=10)
             if response.status_code == 200:
                 data = response.text.strip()
                 if not data:
@@ -50,11 +50,10 @@ def handle_callback(call):
                 else:
                     bot.send_message(call.message.chat.id, "📋 עובדים במנהרה כרגע:\n\n" + data)
             else:
-                bot.send_message(call.message.chat.id, "שגיאה בשליפת הנתונים מהגיליון.")
+                bot.send_message(call.message.chat.id, f"שגיאה: קוד {response.status_code}")
         except Exception as e:
             bot.send_message(call.message.chat.id, f"שגיאה: {str(e)}")
 
-# Flask route
 @app.route(f"/{BOT_TOKEN}", methods=['POST'])
 def receive_update():
     update = telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
@@ -71,3 +70,4 @@ if __name__ == "__main__":
     bot.remove_webhook()
     bot.set_webhook(url=f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}/{BOT_TOKEN}")
     app.run(host="0.0.0.0", port=port)
+                
