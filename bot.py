@@ -3,14 +3,17 @@ import telebot
 import requests
 from flask import Flask, request
 
-# טוקן
+# טוקן מה-@BotFather
 TOKEN = "8048451154:AAGqceEivEO6hlKWCCd4zMLgEfzcb3NrHvU"
 bot = telebot.TeleBot(TOKEN)
 
-# URL לרשימת עובדים
+# URL שמחזיר את רשימת העובדים במנהרה
 WHO_IS_INSIDE_URL = "https://script.google.com/macros/s/AKfycbwQ2QwoI8k6cpR8zuJlZdho9fyBo-XMjkkfmmFKfy70s5FS-Q31U9cjPicc3jVgqwI-/exec?action=who"
 
-# קישורים לקומות
+# קישור ל־Google Sheet
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1nuKPGkxCeJzAnguAo-xA03zY7rdHr5gynlQQwfcw4Ik/edit?usp=drivesdk"
+
+# קישורים לכל קומה
 FLOOR_LINKS = {
     "OP.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=OP.F",
     "GEN.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=GEN.F",
@@ -18,10 +21,7 @@ FLOOR_LINKS = {
     "MIV.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=MIV.F"
 }
 
-# קישור קבוע לגיליון גוגל שיט
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1nuKPGkxCeJzAnguAo-xA03zY7rdHr5gynlQQwfcw4Ik/edit?usp=drivesdk"
-
-# תפריט אינליין
+# תפריט התחלה (inline)
 def send_main_menu(chat_id):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(
@@ -29,26 +29,30 @@ def send_main_menu(chat_id):
         telebot.types.InlineKeyboardButton("✅ יציאה מהמנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"),
     )
     markup.add(telebot.types.InlineKeyboardButton("👀 מי נמצא במנהרה?", callback_data="who_is_inside"))
+
+    # הוספת קומות
     for floor_name, url in FLOOR_LINKS.items():
         markup.add(telebot.types.InlineKeyboardButton(f"📍 קומה {floor_name}", url=url))
+
     bot.send_message(chat_id, "בחר פעולה:", reply_markup=markup)
 
-# תפריט קבוע בתחתית (ReplyKeyboard)
-def send_reply_keyboard(chat_id):
+# תפריט קבוע למטה עם קישור ל־Google Sheet
+def send_persistent_keyboard(chat_id):
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
-    markup.add(telebot.types.KeyboardButton("📊 טבלת מעקב"))
-    bot.send_message(chat_id, " ", reply_markup=markup)  # שולח רווח בשביל להצמיד את התפריט
+    button = telebot.types.KeyboardButton("📊 טבלת מעקב")
+    markup.add(button)
+    bot.send_message(chat_id, "לגישה ישירה לגיליון:", reply_markup=markup)
 
 # התחלה
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    send_reply_keyboard(message.chat.id)
     send_main_menu(message.chat.id)
+    send_persistent_keyboard(message.chat.id)
 
-# לחיצה על כפתור טבלת מעקב
+# תגובה לתפריט הקבוע
 @bot.message_handler(func=lambda msg: msg.text == "📊 טבלת מעקב")
 def handle_sheet_button(message):
-    bot.send_message(message.chat.id, GOOGLE_SHEET_URL)
+    bot.send_message(message.chat.id, f"הנה הקישור לגיליון:\n{GOOGLE_SHEET_URL}")
 
 # לחיצה על כפתור "מי נמצא במנהרה?"
 @bot.callback_query_handler(func=lambda call: call.data == "who_is_inside")
@@ -56,6 +60,7 @@ def handle_who_is_inside(call):
     try:
         res = requests.get(WHO_IS_INSIDE_URL)
         data = res.text.strip()
+
         if not data or "אין רישום" in data:
             bot.send_message(call.message.chat.id, "אין רישום של עובדים שנמצאים במנהרה.")
         else:
@@ -65,13 +70,16 @@ def handle_who_is_inside(call):
                 parts = line.split("|")
                 if len(parts) >= 3:
                     name = parts[0].strip()
-                    time = parts[1].split(" GMT")[0].strip()
+                    time = parts[1].split(" GMT")[0].strip()  # מנקה את אזור הזמן
                     duration = parts[2].strip()
                     output += f"{name} - {time} ({duration})\n"
             bot.send_message(call.message.chat.id, output or "לא נמצאו עובדים.")
     except Exception as e:
         bot.send_message(call.message.chat.id, f"שגיאה: {e}")
+
+    # הצגת התפריטים מחדש
     send_main_menu(call.message.chat.id)
+    send_persistent_keyboard(call.message.chat.id)
 
 # Flask setup
 app = Flask(__name__)
