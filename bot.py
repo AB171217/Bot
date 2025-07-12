@@ -3,16 +3,17 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 import requests
 from flask import Flask, request
 
-# === הגדרות ===
 TOKEN = "8048451154:AAGqceEivEO6hlKWCCd4zMLgEfzcb3NrHvU"
 bot = telebot.TeleBot(TOKEN)
+APP_URL = "https://bot-usvu.onrender.com"  # עדכן לפי Render שלך
 
-# קישורים מוכנים מראש
 CHECKIN_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in"
 CHECKOUT_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"
 WHO_IS_INSIDE_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=who"
 
-# === תפריט ראשי ===
+app = Flask(__name__)
+
+# תפריט ראשי
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -25,7 +26,6 @@ def send_welcome(message):
     )
     bot.send_message(message.chat.id, "ברוך הבא! בחר פעולה:", reply_markup=markup)
 
-# === כפתור כניסה ===
 @bot.message_handler(func=lambda message: message.text == "✅ כניסה למנהרה")
 def handle_checkin(message):
     try:
@@ -34,7 +34,6 @@ def handle_checkin(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"שגיאה פנימית:\n{str(e)}")
 
-# === כפתור יציאה ===
 @bot.message_handler(func=lambda message: message.text == "🚪 יציאה מהמנהרה")
 def handle_checkout(message):
     try:
@@ -43,7 +42,6 @@ def handle_checkout(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"שגיאה פנימית:\n{str(e)}")
 
-# === כפתור מי נמצא במנהרה ===
 @bot.message_handler(func=lambda message: message.text == "📋 מי נמצא במנהרה?")
 def handle_who_inside(message):
     try:
@@ -62,15 +60,20 @@ def handle_who_inside(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"שגיאה פנימית:\n{str(e)}")
 
-# === Flask (עבור render) ===
-app = Flask(__name__)
+# נתיב webhook של טלגרם
+@app.route(f"/{TOKEN}", methods=["POST"])
+def receive_update():
+    json_str = request.get_data().decode("utf-8")
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return '', 200
 
-@app.route('/', methods=['GET'])
+# ברירת מחדל
+@app.route("/", methods=["GET"])
 def index():
-    return 'Bot is running'
+    return "Bot is running!"
 
-if __name__ == '__main__':
-    import threading
-    threading.Thread(target=bot.infinity_polling, name="bot").start()
+if __name__ == "__main__":
+    bot.remove_webhook()
+    bot.set_webhook(url=f"{APP_URL}/{TOKEN}")
     app.run(host="0.0.0.0", port=10000)
-            
