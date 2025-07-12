@@ -9,7 +9,7 @@ APP_URL = "https://bot-usvu.onrender.com"  # עדכן לפי Render שלך
 
 CHECKIN_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in"
 CHECKOUT_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"
-WHO_IS_INSIDE_URL = "https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=who"
+WHO_IS_INSIDE_URL = "https://script.google.com/macros/s/AKfycbzxj2LiSzBS9XHXKD5xg3jCGxV1VAa0uXcqgyyWrGO4kIb7dnD3avPN44o97JU7UkA/exec?action=who"
 
 app = Flask(__name__)
 
