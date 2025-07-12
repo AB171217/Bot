@@ -1,86 +1,81 @@
+import os
 import telebot
-from telebot import types
-from flask import Flask, request
 import requests
+from flask import Flask, request
 
-API_TOKEN = '8048451154:AAGqceEivEO6hlKWCCd4zMLgEfzcb3NrHvU'
-bot = telebot.TeleBot(API_TOKEN)
-app = Flask(__name__)
+# טוקן מה-@BotFather
+TOKEN = "8048451154:AAGqceEivEO6hlKWCCd4zMLgEfzcb3NrHvU"
+bot = telebot.TeleBot(TOKEN)
 
-# קישורים מוכנים
-CHECKIN_URL = 'https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in'
-CHECKOUT_URL = 'https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out'
-WHO_IS_INSIDE_URL = 'https://script.google.com/macros/s/AKfycbwQ2QwoI8k6cpR8zuJlZdho9fyBo-XMjkkfmmFKfy70s5FS-Q31U9cjPicc3jVgqwI-/exec?action=who'
+# URL שמחזיר את רשימת העובדים במנהרה
+WHO_IS_INSIDE_URL = "https://script.google.com/macros/s/AKfycbwQ2QwoI8k6cpR8zuJlZdho9fyBo-XMjkkfmmFKfy70s5FS-Q31U9cjPicc3jVgqwI-/exec?action=who"
 
-FLOORS = {
+# קישורים לכל קומה
+FLOOR_LINKS = {
     "OP.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=OP.F",
     "GEN.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=GEN.F",
     "TU.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=TU.F",
     "MIV.F": "https://script.google.com/macros/s/AKfycbze-hLTCCDCIfg8uBFAWJK9tz9KUB7aGHc-5Nt4XB7pmVqQiMv-TaDOi219Of8b1-Ca/exec?floor=MIV.F"
 }
 
-# תפריט ראשי
+# תפריט התחלה
 def send_main_menu(chat_id):
-    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup = telebot.types.InlineKeyboardMarkup()
     markup.add(
-        types.InlineKeyboardButton("✅ כניסה למנהרה", url=CHECKIN_URL),
-        types.InlineKeyboardButton("🚪 יציאה מהמנהרה", url=CHECKOUT_URL)
+        telebot.types.InlineKeyboardButton("🔓 כניסה למנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20in"),
+        telebot.types.InlineKeyboardButton("🔒 יציאה מהמנהרה", url="https://script.google.com/macros/s/AKfycby2ZE8X-betb6lrAuD-NkNIcbnbVMwJki3evRoqjCqCoGaYjuSST-hu9Ihm6juBxSd3/exec?action=MAT%20Check%20out"),
     )
-    markup.add(types.InlineKeyboardButton("👀 מי נמצא במנהרה?", callback_data='who_is_inside'))
+    markup.add(telebot.types.InlineKeyboardButton("👀 מי נמצא במנהרה?", callback_data="who_is_inside"))
 
-    for name, url in FLOORS.items():
-        markup.add(types.InlineKeyboardButton(f"📍 קומה {name}", url=url))
+    # הוספת קומות
+    for floor_name, url in FLOOR_LINKS.items():
+        markup.add(telebot.types.InlineKeyboardButton(f"📍 קומה {floor_name}", url=url))
 
     bot.send_message(chat_id, "בחר פעולה:", reply_markup=markup)
 
 # התחלה
 @bot.message_handler(commands=['start'])
-def send_welcome(message):
+def handle_start(message):
     send_main_menu(message.chat.id)
 
-# לחצני callback
-@bot.callback_query_handler(func=lambda call: call.data == 'who_is_inside')
+# לחיצה על כפתור "מי נמצא במנהרה?"
+@bot.callback_query_handler(func=lambda call: call.data == "who_is_inside")
 def handle_who_is_inside(call):
     try:
-        response = requests.get(WHO_IS_INSIDE_URL)
-        if response.status_code == 200:
-            text = response.text.strip()
-            if not text or "אין רישום" in text:
-                bot.send_message(call.message.chat.id, "אין רישום של עובדים שנמצאים במנהרה")
-                return
+        res = requests.get(WHO_IS_INSIDE_URL)
+        data = res.text.strip()
 
-            lines = [line.strip() for line in text.splitlines() if line.strip()]
-            cleaned_lines = []
-            for line in lines:
-                if "|" in line:
-                    parts = line.split("|")
-                    email = parts[0].strip()
-                    datetime = parts[1].strip().split("GMT")[0].strip()
-                    duration = parts[2].strip() if len(parts) > 2 else ""
-                    cleaned_lines.append(f"{email} | {datetime} | {duration}")
+        if not data or "אין רישום" in data:
+            bot.send_message(call.message.chat.id, "אין רישום של עובדים שנמצאים במנהרה.")
+            return
 
-            final_text = "\n".join(cleaned_lines)
-            bot.send_message(call.message.chat.id, final_text or "אין רישום של עובדים במנהרה.")
-        else:
-            bot.send_message(call.message.chat.id, "שגיאה בעת בקשת הנתונים.")
+        lines = data.splitlines()
+        output = ""
+        for line in lines:
+            parts = line.split("|")
+            if len(parts) >= 3:
+                name = parts[0].strip()
+                time = parts[1].split(" GMT")[0].strip()  # מנקה את אזור הזמן
+                duration = parts[2].strip()
+                output += f"{name} - {time} ({duration})\n"
+
+        bot.send_message(call.message.chat.id, output or "לא נמצאו עובדים.")
+
     except Exception as e:
-        bot.send_message(call.message.chat.id, f"שגיאה פנימית: {str(e)}")
+        bot.send_message(call.message.chat.id, f"שגיאה: {e}")
 
-# Flask endpoint (לנתיב עם הטוקן)
-@app.route(f"/{API_TOKEN}", methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    return 'Invalid request', 400
+# Flask setup
+app = Flask(__name__)
 
-# בדיקה ראשונית
-@app.route('/', methods=['GET'])
+@app.route(f"/{TOKEN}", methods=['POST'])
+def telegram_webhook():
+    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    return "OK", 200
+
+@app.route("/", methods=['GET'])
 def index():
-    return 'Bot is running!'
+    return "Bot is running!", 200
 
-# הפעלת Flask
-if __name__ == '__main__':
-    app.run(debug=False, port=10000)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
