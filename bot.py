@@ -41,8 +41,6 @@ def send_persistent_keyboard(chat_id):
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
     button = telebot.types.KeyboardButton("📊 טבלת מעקב")
     markup.add(button)
-    bot.send_message(chat_id, "לגישה ישירה לגיליון:", reply_markup=markup)
-
 # התחלה
 @bot.message_handler(commands=['start'])
 def handle_start(message):
